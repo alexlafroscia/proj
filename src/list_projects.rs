@@ -9,7 +9,7 @@ fn is_repo(entry: &DirEntry) -> bool {
     git_dir.exists()
 }
 
-pub fn list_projects(path: PathBuf) -> Vec<DirEntry> {
+pub fn list_projects(path: &PathBuf) -> Vec<DirEntry> {
     fs::read_dir(path)
         .expect("Could not read directory")
         .flat_map(|wrapped_entry| {
@@ -27,7 +27,7 @@ pub fn list_projects(path: PathBuf) -> Vec<DirEntry> {
                 // if this is a repo, add it to our result
                 true => vec![entry],
                 // otherwise, descend into this directory
-                false => list_projects(entry.path()),
+                false => list_projects(&entry.path()),
             }
         })
         .collect::<Vec<DirEntry>>()
