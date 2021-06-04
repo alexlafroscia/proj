@@ -32,3 +32,88 @@ pub fn list_projects(path: &PathBuf) -> Vec<DirEntry> {
         })
         .collect::<Vec<DirEntry>>()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::list_projects;
+
+    use assert_fs::fixture::TempDir;
+    use std::ffi::OsString;
+    use std::fs::{create_dir_all, File};
+    use std::io::prelude::*;
+    use std::path::PathBuf;
+
+    #[test]
+    fn non_project_directories() {
+        let tmp_dir = TempDir::new().unwrap();
+
+        // Create a sub-directory that is a project
+        let mut a = PathBuf::from(tmp_dir.path());
+        a.push("a");
+        a.push(".git");
+
+        create_dir_all(a.as_path()).expect("Could not create project directory for testing");
+
+        // Create a sub-directory that is not a project
+        let mut b = PathBuf::from(tmp_dir.path());
+        b.push("b");
+
+        create_dir_all(b.as_path()).expect("Could not create project directory for testing");
+
+        let result = list_projects(&PathBuf::from(tmp_dir.path()))
+            .into_iter()
+            .map(|entry| entry.file_name())
+            .collect::<Vec<OsString>>();
+
+        assert_eq!(result, vec![OsString::from("a")]);
+    }
+
+    #[test]
+    fn filtering_files() {
+        let tmp_dir = TempDir::new().unwrap();
+
+        // Create a sub-directory that is a project
+        let mut a = PathBuf::from(tmp_dir.path());
+        a.push("a");
+        a.push(".git");
+
+        create_dir_all(a.as_path()).expect("Could not create project directory for testing");
+
+        // Create a sub-directory that is not a project
+        let mut b_path = PathBuf::from(tmp_dir.path());
+        b_path.push("b");
+        b_path.set_extension("txt");
+
+        let mut b_file = File::create(b_path).expect("Could not create file");
+        b_file
+            .write_all(b"Testing")
+            .expect("Could not write to file");
+
+        let result = list_projects(&PathBuf::from(tmp_dir.path()))
+            .into_iter()
+            .map(|entry| entry.file_name())
+            .collect::<Vec<OsString>>();
+
+        assert_eq!(result, vec![OsString::from("a")]);
+    }
+
+    #[test]
+    fn nested_directories() {
+        let tmp_dir = TempDir::new().unwrap();
+
+        // Create a sub-directory that is a project
+        let mut a = PathBuf::from(tmp_dir.path());
+        a.push("a");
+        a.push("b");
+        a.push(".git");
+
+        create_dir_all(a.as_path()).expect("Could not create project directory for testing");
+
+        let result = list_projects(&PathBuf::from(tmp_dir.path()))
+            .into_iter()
+            .map(|entry| entry.file_name())
+            .collect::<Vec<OsString>>();
+
+        assert_eq!(result, vec![OsString::from("b")]);
+    }
+}
