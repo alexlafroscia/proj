@@ -12,12 +12,15 @@ use list_projects::*;
 fn main() {
     let stdout = io::stdout();
     let mut stdout_handle = stdout.lock();
-    let cwd = env::current_dir().expect("Could not determine the current directory");
 
     let matches = App::new("proj")
         .version(crate_version!())
         .author("Alex LaFroscia <alex@lafroscia.com>")
         .about("List projects under a given directory")
+        .arg(
+            Arg::with_name("WITHIN")
+                .help("The directory to locate projects within [default: $PWD]"),
+        )
         .arg(
             Arg::with_name("absolute")
                 .short("a")
@@ -26,11 +29,20 @@ fn main() {
         )
         .get_matches();
 
-    for entry in list_projects(&cwd) {
+    let within = match matches.is_present("WITHIN") {
+        true => PathBuf::from(
+            matches
+                .value_of("WITHIN")
+                .expect("Could not read `within` argument"),
+        ),
+        false => env::current_dir().expect("Could not determine the current directory"),
+    };
+
+    for entry in list_projects(&within) {
         let mut path = entry.path();
 
         if !matches.is_present("absolute") {
-            path = PathBuf::from(path.strip_prefix(&cwd).expect("Could not strip prefix"));
+            path = PathBuf::from(path.strip_prefix(&within).expect("Could not strip prefix"));
         }
 
         stdout_handle
