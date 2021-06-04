@@ -1,6 +1,6 @@
 [package]
 name = "proj"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["Alex LaFroscia <alex@lafroscia.com>"]
 edition = "2018"
 publish = false
